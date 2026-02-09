@@ -103,3 +103,33 @@ Our pipeline follows the same high-level idea (spatiotemporal features + SVM for
 | **Evaluation** | Balanced accuracy, macro F1, confusion matrix on held-out test set. | Reported accuracy on the designated test set. |
 
 In short: we use **dense grid HOF + mean/max aggregation** and **RBF SVM with validation-based tuning**; the paper uses **space-time interest points + local descriptors** and an official KTH subject split, with SVM details as in the original paper.
+
+---
+
+## 4. What the metrics mean (plain English)
+
+- **Accuracy**: Fraction of test videos where the predicted action matches the true action. Simple “how many correct?” but can be misleading if some actions are much more frequent than others (e.g. always predicting “walking” can look good if walking is dominant).
+
+- **Balanced accuracy**: Average of per-class recall (for each action, “what fraction of true X did we correctly label as X?”). Each of the 6 actions is weighted equally, so doing well on rare actions matters as much as on common ones. **0.60** means we’re right about 60% of the time when each class is treated equally.
+
+- **Macro F1**: For each action we compute F1 (balance of precision and recall), then average over the 6 actions. Again, every class counts equally. **0.60** means a similar “average quality” of predictions across all actions. Good when you care about every class, not just the big ones.
+
+We report balanced accuracy and macro F1 so that small or hard classes (e.g. handclapping) are not drowned out by easier or more frequent ones (e.g. walking).
+
+---
+
+## 5. How our results compare to published work
+
+Reported results on KTH in the literature (same 6 actions, subject-based or official split):
+
+| Setting | Reported performance | Notes |
+|--------|----------------------|--------|
+| **Our SVM (dense HOF, RBF)** | **~60%** balanced acc / accuracy | Simplified features (no interest points), 70/15/15 subject split, validation-based tuning. |
+| **Our Bayesian** | **~45%** | Same features; Gaussian NB is a weaker model for this task. |
+| **Our k-NN** | **~39%** | Same features; distance-based on raw HOF vectors. |
+| **Schuldt et al. (2004)** | Baseline for the dataset | Local SVM with space-time interest points and local descriptors (HOG/HOF); exact number varies by split and setup. |
+| **Laptev et al. (space-time interest points, improved)** | **~91.8%** | Strong hand-crafted features (space-time interest points, pyramids, multi-channel SVM). |
+| **Later work (e.g. contextual stats of space-time features)** | **~96%** | Even more refined hand-crafted or hybrid pipelines. |
+| **Deep learning (e.g. CNN-GRU)** | Often **90%+** | Learned representations on raw or preprocessed video. |
+
+**Takeaway**: Our **~60%** SVM result is reasonable for a **simplified classical pipeline** (dense HOF + mean/max, no interest points, no codebook). It is well below **~92–96%** from stronger hand-crafted (interest-point + descriptor) or deep-learning methods. The gap is expected: we use a cheaper, easier-to-implement feature design (Option A) rather than the full paper-style pipeline (Option B) or learned features. Improving toward 90%+ would require either adopting space-time interest points and better descriptors or moving to a deep-learning model.
