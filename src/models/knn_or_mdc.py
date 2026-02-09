@@ -1,12 +1,13 @@
 """
-k-NN classifier with optional grid search (n_neighbors, metric).
+k-NN classifier with grid search on validation set (n_neighbors, metric).
 """
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 import numpy as np
 import yaml
-from sklearn.model_selection import GridSearchCV
+from sklearn.base import clone
+from sklearn.model_selection import GridSearchCV, PredefinedSplit
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
 
@@ -25,8 +26,8 @@ def train_knn(
     config_path: Optional[str | Path] = None,
 ) -> tuple:
     """
-    StandardScaler + k-NN. Grid search on n_neighbors and metric.
-    Returns (best_estimator, scaler, best_params).
+    StandardScaler + k-NN. Grid search on n_neighbors and metric using validation set (PredefinedSplit).
+    Best estimator is refit on train only. Returns (best_estimator, scaler, best_params).
     """
     if config is None:
         config = load_knn_config(config_path) if config_path else {}
@@ -37,15 +38,23 @@ def train_knn(
     X_train_s = scaler.fit_transform(X_train)
     X_val_s = scaler.transform(X_val)
 
+    n_train, n_val = len(X_train_s), len(X_val_s)
+    X_dev = np.vstack([X_train_s, X_val_s])
+    y_dev = np.concatenate([y_train, y_val])
+    test_fold = np.array([-1] * n_train + [0] * n_val)
+    cv = PredefinedSplit(test_fold)
+
     base = KNeighborsClassifier(weights=config.get("weights", "uniform"))
     gs = GridSearchCV(
         base,
         param_grid,
-        cv=3,
+        cv=cv,
         scoring="balanced_accuracy",
         refit=True,
         n_jobs=-1,
         verbose=0,
     )
-    gs.fit(X_train_s, y_train)
-    return gs.best_estimator_, scaler, gs.best_params_
+    gs.fit(X_dev, y_dev)
+    best_estimator = clone(gs.best_estimator_)
+    best_estimator.fit(X_train_s, y_train)
+    return best_estimator, scaler, gs.best_params_

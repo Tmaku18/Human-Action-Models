@@ -1,12 +1,13 @@
 """
-SVM baseline: standardize features, grid search on val, evaluate on test.
+SVM baseline: standardize features, grid search on validation set, evaluate on test.
 """
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 import numpy as np
 import yaml
-from sklearn.model_selection import GridSearchCV
+from sklearn.base import clone
+from sklearn.model_selection import GridSearchCV, PredefinedSplit
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
@@ -26,7 +27,8 @@ def train_svm(
 ) -> tuple:
     """
     Fit StandardScaler on train; scale train/val.
-    Grid search SVM on (X_train, y_train) with validation scoring, or use val set explicitly.
+    Grid search SVM using the validation set for model selection (PredefinedSplit).
+    The best estimator is refit on train only before return (val used only for tuning).
     Returns (best_estimator, scaler, best_params).
     """
     if config is None:
@@ -38,6 +40,13 @@ def train_svm(
     X_train_s = scaler.fit_transform(X_train)
     X_val_s = scaler.transform(X_val)
 
+    # Merge train and val for GridSearchCV; use PredefinedSplit so only val is the "test" fold
+    n_train, n_val = len(X_train_s), len(X_val_s)
+    X_dev = np.vstack([X_train_s, X_val_s])
+    y_dev = np.concatenate([y_train, y_val])
+    test_fold = np.array([-1] * n_train + [0] * n_val)
+    cv = PredefinedSplit(test_fold)
+
     base = SVC(
         kernel=config.get("kernel", "rbf"),
         decision_function_shape=config.get("decision_function_shape", "ovr"),
@@ -46,12 +55,14 @@ def train_svm(
     gs = GridSearchCV(
         base,
         param_grid,
-        cv=3,
+        cv=cv,
         scoring="balanced_accuracy",
         refit=True,
         n_jobs=-1,
         verbose=0,
     )
-    gs.fit(X_train_s, y_train)
-    best_estimator = gs.best_estimator_
+    gs.fit(X_dev, y_dev)
+    # Refit best estimator on train only (val was only for selection; keeps test evaluation unbiased)
+    best_estimator = clone(gs.best_estimator_)
+    best_estimator.fit(X_train_s, y_train)
     return best_estimator, scaler, gs.best_params_
