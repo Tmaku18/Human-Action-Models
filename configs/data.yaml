@@ -1,0 +1,26 @@
+# Data paths and preprocessing (Phase 1 & 2)
+
+data_dir: "data/raw"           # KTH root (after download; may contain action subdirs or flat AVIs)
+processed_dir: "data/processed"
+splits_dir: "data/splits"
+
+# Subject-based split (Schuldt et al.)
+train_ratio: 0.70
+val_ratio: 0.15
+test_ratio: 0.15
+split_seed: 42
+
+# Preprocessing
+n_frames: 16                    # uniform sampling to this many frames per video
+frame_size: [160, 120]          # (height, width) - KTH native
+grayscale: true
+
+# Feature extraction (Option A: HOF + block histograms)
+feature_version: "v1"
+optical_flow_block_size: 16     # block size for dense optical flow
+hof_bins: 9                     # histogram of flow bins
+n_blocks_h: 5                   # spatial grid (height)
+n_blocks_w: 5                   # spatial grid (width)
+
+# Cache
+cache_features: true             # save/load features from processed_dir

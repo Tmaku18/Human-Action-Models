@@ -1,0 +1,12 @@
+# SVM baseline (Phase 3)
+
+model: "svm"
+kernel: "rbf"
+decision_function_shape: "ovr"
+
+# Grid search on validation set
+param_grid:
+  C: [0.1, 1.0, 10.0]
+  gamma: ["scale", 0.01, 0.1]
+
+random_state: 42

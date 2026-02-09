@@ -1,0 +1,10 @@
+# Bayesian classifier (Phase 4) - Gaussian Naive Bayes
+
+model: "bayesian"
+estimator: "gaussian_nb"
+
+# Optional tuning (var_smoothing)
+param_grid:
+  var_smoothing: [1.0e-9, 1.0e-8, 1.0e-7]
+
+random_state: 42

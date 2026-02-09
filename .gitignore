@@ -1,0 +1,32 @@
+# Data (large)
+data/raw/
+data/processed/*.npz
+
+# Keep split files and small metadata
+!data/splits/
+!data/processed/action_names.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets (never commit)
+.env
+.env.*
+**/kaggle.json
+
+# Optional: uncomment to ignore result artifacts
+# results/

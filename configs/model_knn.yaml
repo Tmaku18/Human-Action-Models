@@ -1,0 +1,10 @@
+# k-NN classifier (Phase 4)
+
+model: "knn"
+weights: "uniform"   # or "distance"
+
+param_grid:
+  n_neighbors: [3, 5, 7, 11, 15]
+  metric: ["euclidean", "manhattan"]
+
+random_state: 42
